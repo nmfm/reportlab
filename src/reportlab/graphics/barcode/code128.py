@@ -219,6 +219,7 @@ class Code128(MultiWidthBarcode):
     rquiet = None
     quiet = 1
     barHeight = None
+    compress = 0
     def __init__(self, value='', **args):
         value = str(value) if isinstance(value,int) else asNative(value)
             
@@ -270,6 +271,36 @@ class Code128(MultiWidthBarcode):
         else:
             return l
 
+    def _compressToC(self, l):
+        # Optimization: try to set as much C double-digits as possible
+        c = 1
+        rl = ['STOP']
+        mode = 'B'
+        while c < len(l):
+            i = (-c - 1)
+            if l[i] == '\xf1':
+                c += 1
+                rl.insert(0, '\xf1')
+                continue
+            elif len(l[i]) == 1 and l[i] in digits \
+             and len(l[i-1]) == 1 and l[i-1] in digits:
+                if mode == 'B':
+                     rl.insert(0, 'TO_B')
+                mode = 'C'
+                c += 2
+                rl.insert(0, l[i-1] + l[i])
+                continue
+            else:
+                if mode == 'C':
+                    rl.insert(0, 'TO_C')
+                mode = 'B'
+                rl.insert(0, l[i])
+                c += 1
+        if len(rl) < len(l):
+            return rl
+        else:
+            return l
+
     def encode(self):
         # First, encode using only B
         s = self.validated
@@ -281,7 +312,10 @@ class Code128(MultiWidthBarcode):
                 l.append(c)
         l.append('STOP')
 
-        l = self._trailingDigitsToC(l)
+        if self.compress:
+            l = self._compressToC(l)
+        else:
+            l = self._trailingDigitsToC(l)
 
         # Finally, replace START_X,TO_Y with START_Y
         if l[1] in tos:

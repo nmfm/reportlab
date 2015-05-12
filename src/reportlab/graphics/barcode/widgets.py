@@ -165,7 +165,8 @@ BarcodeI2of5 = _BCW(
 
 BarcodeCode128 = _BCW("""Code 128 encodes any number of characters in the ASCII character set.""",
                 "Code128",
-                AttrMap(BASE=BarcodeI2of5,UNWANTED=('bearers','checksum','ratio','checksum','stop')),
+                AttrMap(BASE=BarcodeI2of5,UNWANTED=('bearers','checksum','ratio','checksum','stop'),
+                        compress = AttrMapValue(isBoolean, desc='add extra-compression the code (default 0)'),),
                 'reportlab.graphics.barcode.code128',
                 "AB-12345678",
                 _tests = ['ReportLab Rocks!', 'PFWZF'],
